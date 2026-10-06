@@ -1,0 +1,16 @@
+{
+  "name": "医学生实训笔记助手",
+  "short_name": "实训笔记",
+  "description": "医学生实训记录、标本归档、操作SOP、药物配伍查询与镜下图谱对照的离线笔记工具",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7fa",
+  "theme_color": "#0e9aa7",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
