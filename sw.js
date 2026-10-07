@@ -1,10 +1,10 @@
 /* 离线缓存外壳：联网时始终取最新，断网时回退缓存 */
-const CACHE = 'medlab-v21';
+const CACHE = 'medlab-v22';
 const SHELL = [
   './',
   'index.html',
   'styles.css?v=18',
-  'app.js?v=21',
+  'app.js?v=22',
   'db.js?v=18',
   'seed.js?v=18',
   'cloud-config.js?v=18',

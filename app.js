@@ -96,8 +96,23 @@
     tools: ['实训工具箱', 'SOP · 配伍 · 图谱'], review: ['考前复习', '卡片测验与间隔记忆'],
     lib: ['复习库', '自建学科分类与题库'], me: ['我的', '数据管理与关于']
   };
+  // 构建号：从自身 <script src="app.js?v=N"> 自动读取，无需手改（用于确认手机是否已加载新版本）
+  const BUILD = (function () {
+    try {
+      const s = document.currentScript;
+      const m = s && s.src && s.src.match(/[?&]v=(\d+)/);
+      if (m) return 'v' + m[1];
+    } catch (e) {}
+    return 'dev';
+  })();
   function header(title, sub) {
-    return `<header class="top"><div><h1>${esc(title)}</h1><div class="sub">${esc(sub || '')}</div></div></header>`;
+    return `<header class="top"><div><h1>${esc(title)}</h1><div class="sub" id="hdsub">${esc(sub || '')}</div></div></header>`;
+  }
+  // 顶栏副标题实时刷新：让「待复习 / 剩余」计数随答题立刻递减（无需退出重进）
+  function setSub(text) {
+    const el = document.getElementById('hdsub');
+    const t = String(text == null ? '' : text);
+    if (el && el.textContent !== t) el.textContent = t;
   }
   function setNav(active) {
     document.querySelectorAll('#nav a').forEach((a) => {
@@ -889,11 +904,15 @@
     }
     const due = items.filter((c) => (c.due || 0) <= Date.now());
     const queue = (due.length ? due : items).slice();
-    app.innerHTML = header('复习 · ' + cat.name, `共 ${items.length} 题 · 待复习 ${due.length} 题`) + `<div class="container" id="rv"></div>`;
+    const totalQ = items.length;
+    let i = 0;
+    // 顶栏「待复习」= 本轮还剩多少题没复习，随答题即时递减
+    function updSub() { setSub('共 ' + totalQ + ' 题 · 待复习 ' + Math.max(0, queue.length - i) + ' 题'); }
+    app.innerHTML = header('复习 · ' + cat.name, `共 ${totalQ} 题 · 待复习 ${queue.length} 题`) + `<div class="container" id="rv"></div>`;
     const box = document.getElementById('rv');
     if (queue.length === 0) { box.innerHTML = `<div class="empty"><div class="big">🎉</div><p>暂无可复习题目</p></div>`; return; }
-    let i = 0;
     function show() {
+      updSub();
       if (i >= queue.length) {
         box.innerHTML = `<div class="empty"><div class="big">✅</div><p>本轮复习完成！</p><button class="btn-ghost" id="again" style="width:100%">再来一轮</button></div>`;
         document.getElementById('again').onclick = () => renderLibQuiz(catId);
@@ -1107,7 +1126,7 @@
     }
     const total = items.length;
     let order = 'seq', queue = items.slice(), i = 0, correct = 0, wrong = 0;
-    app.innerHTML = header('刷题 · ' + cat.name, `共 ${total} 题`) +
+    app.innerHTML = header('刷题 · ' + cat.name, `共 ${total} 题 · 剩余 ${queue.length} 题`) +
       `<div class="container" id="dv">
         <div class="row" style="gap:8px;margin-bottom:10px">
           <button class="btn-ghost btn-sm" id="shuffle">🔀 切乱序</button>
@@ -1120,6 +1139,8 @@
     function shuffle(a) { for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; }
     function buildQueue() { queue = order === 'shuffle' ? shuffle(items.slice()) : items.slice(); i = 0; correct = 0; wrong = 0; }
     function updateBar() { const bar = document.getElementById('bar'); if (bar) bar.style.width = Math.round((i / total) * 100) + '%'; }
+    // 顶栏「剩余」随答题即时递减（不用退出重进）
+    function updSub() { setSub('共 ' + total + ' 题 · 剩余 ' + Math.max(0, queue.length - i) + ' 题'); }
     async function record(c, ok) {
       c.stats = c.stats || { times: 0, correct: 0, wrong: 0 };
       c.stats.times++; if (ok) c.stats.correct++; else c.stats.wrong++;
@@ -1127,6 +1148,7 @@
       if (ok) correct++; else wrong++;
     }
     function show() {
+      updSub();
       if (i >= queue.length) { finish(); return; }
       const c = queue[i];
       const imgs = (c.photos || []).map((p) => `<img src="${p}" style="width:100%;border-radius:8px;margin-top:8px;max-height:220px;object-fit:contain">`).join('');
@@ -1256,12 +1278,16 @@
     let cards = (await DB.getAll('cards')).sort((x, y) => x.due - y.due);
     const due = cards.filter((c) => c.due <= Date.now());
     const queue = (due.length ? due : cards);
-    app.innerHTML = header('考前复习', `共 ${cards.length} 张 · 待复习 ${due.length} 张`) +
+    const totalC = cards.length;
+    let i = 0;
+    // 顶栏「待复习」= 本轮还剩多少张卡片没复习，随答题即时递减
+    function updSub() { setSub('共 ' + totalC + ' 张 · 待复习 ' + Math.max(0, queue.length - i) + ' 张'); }
+    app.innerHTML = header('考前复习', `共 ${totalC} 张 · 待复习 ${queue.length} 张`) +
       `<div class="container" id="rv"></div>`;
     const box = document.getElementById('rv');
     if (queue.length === 0) { box.innerHTML = `<div class="empty"><div class="big">🎉</div><p>暂无可复习卡片</p></div>`; return; }
-    let i = 0;
     function show() {
+      updSub();
       if (i >= queue.length) {
         box.innerHTML = `<div class="empty"><div class="big">✅</div><p>本轮复习完成！</p><button class="btn-ghost" id="again" style="width:100%">再来一轮</button></div>`;
         document.getElementById('again').onclick = () => renderReview();
@@ -1328,6 +1354,7 @@
           面向医学生实训课：记录、标本归档、操作 SOP、药物配伍、镜下图谱对照、考前复习。<br>
           数据默认存本机；登录后实训记录与标本同步云端（按账号隔离）。<br>
           <b>免责声明：</b>SOP、配伍与图谱均为教学参考，实际操作、用药与诊断须以教材、最新药品说明书、带教老师及临床规范为准；本工具不构成医疗建议。</p>
+          <p class="muted" style="margin:4px 0;font-size:12px">当前构建：<b>${BUILD}</b>　（若此处未显示构建号，或构建号落后于最新版本，请在浏览器中对本页「强制刷新」一次以清除缓存）</p>
           <div class="credits" style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line,#e0e0e0)">
             <div style="font-size:13px;line-height:1.9">
               <span class="muted">软件开发：</span>苏裕盛 教授 / 医学博士<br>
